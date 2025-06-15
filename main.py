@@ -484,7 +484,7 @@ def agent_card(request: Request):
         documentationUrl=f"{base_url}/docs",
         capabilities=a2a.AgentCapabilities(
             streaming=False,
-            pushNotifications=True,
+            pushNotifications=False,
             stateTransitionHistory=True,
         ),
         authentication=a2a.AgentAuthentication(schemes=["Bearer"]),
