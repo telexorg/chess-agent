@@ -450,8 +450,8 @@ async def handle_rpc(request_data: dict, background_tasks: BackgroundTasks):
 
         if isinstance(rpc_request, a2a.SendMessageRequest):
             print("Recieved message/send")
-            # return await handle_message_send(params=rpc_request.params)
-            return await handle_message_send_with_webhook(params=rpc_request.params, background_tasks=background_tasks)
+            return await handle_message_send(params=rpc_request.params)
+            # return await handle_message_send_with_webhook(params=rpc_request.params, background_tasks=background_tasks)
         elif isinstance(rpc_request, a2a.GetTaskRequest):
             print("tasks/get")
             return await handle_get_task(params=rpc_request.params)
