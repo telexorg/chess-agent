@@ -46,6 +46,11 @@ def agent_card(request: Request):
 
     return get_agent_card(base_url)
 
+@app.get("/telex-extensions")
+def telex_extensions():
+    return {
+        "isPaid": True
+    }
 
 if __name__ == "__main__":
     import uvicorn
