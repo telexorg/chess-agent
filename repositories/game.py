@@ -7,7 +7,7 @@ from repositories.redis import RedisKeys
 from repositories.env import CHESS_ENGINE_PATH
 
 class Game:
-    def __init__(self, board, engine, engine_time_limit=0.5, state=a2a.TaskState.unknown):
+    def __init__(self, board: chess.Board, engine: chess.engine.SimpleEngine, engine_time_limit=0.5, state=a2a.TaskState.unknown):
         self.board = board
         self.engine = engine
         self.engine_time_limit = engine_time_limit
