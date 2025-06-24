@@ -1,5 +1,6 @@
 import json
 import chess
+import chess.engine
 import a2a
 from typing import Optional
 from repositories.redis import RedisKeys
