@@ -1,7 +1,7 @@
 import os
 import a2a
 from repositories.random_name import RandomNameRepository
-from repositories.env import WITH_TELEX_EXTENSIONS
+from repositories.env import WITH_TELEX_EXTENSIONS, DEPLOYMENT_TYPE, DeploymentTypes
 
 agent_name_suffix = (
     "_" + os.getenv("APP_ENV") + "_" + RandomNameRepository.generate_suffix()
@@ -23,7 +23,7 @@ def get_agent_card(base_url):
         documentationUrl=f"{base_url}/docs",
         capabilities=a2a.AgentCapabilities(
             streaming=False,
-            pushNotifications=False,
+            pushNotifications=DEPLOYMENT_TYPE == DeploymentTypes.WEBHOOK.value,
             stateTransitionHistory=True,
         ),
         authentication=a2a.AgentAuthentication(schemes=["Bearer"]),
