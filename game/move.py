@@ -7,6 +7,7 @@ from repositories.env import CHESS_ENGINE_PATH
 
 game_repo = GameRepository(redis_client)
 
+
 def handle_user_move_as_board(game: Game):
     image_url, filename = generate_board_image(game.board)
     board_state_response = a2a.SendMessageResponse(
@@ -27,6 +28,7 @@ def handle_user_move_as_board(game: Game):
     )
     return board_state_response
 
+
 def handle_resignation(task_id: str):
     game_repo.game_over(task_id)
     return a2a.SendMessageResponse(
@@ -39,16 +41,15 @@ def handle_resignation(task_id: str):
                     role="agent",
                     parts=[
                         a2a.TextPart(text="Game ended by resignation.\n"),
-                        a2a.TextPart(
-                            text="Start a new game by entering a valid move."
-                        ),
+                        a2a.TextPart(text="Start a new game by entering a valid move."),
                     ],
                 ),
             ),
         ),
     )
 
-def handle_game_over(task_id:str, aimove, filename:str, image_url:str):
+
+def handle_game_over(task_id: str, aimove, filename: str, image_url: str):
     game_repo.game_over(task_id)
 
     return a2a.SendMessageResponse(
@@ -75,32 +76,37 @@ def handle_game_over(task_id:str, aimove, filename:str, image_url:str):
         ),
     )
 
-def handle_final_response(task_id:str, aimove, filename:str, image_url: str):
+
+def handle_final_response(task_id: str, aimove, filename: str, image_url: str):
     response = a2a.SendMessageResponse(
         result=a2a.Task(
             id=task_id,
+            contextId=str(uuid4()),
             status=a2a.TaskStatus(
                 state=a2a.TaskState.input_required,
-                message=a2a.Message(
-                    role="agent",
-                    messageId=uuid4().hex,
+            ),
+            artifacts=[
+                a2a.Artifact(
+                    name="move", parts=[a2a.TextPart(text=f"AI moved {aimove.uci()}")]
+                ),
+                a2a.Artifact(
+                    name="board",
                     parts=[
-                        a2a.TextPart(text=f"AI moved {aimove.uci()}"),
-                        # a2a.TextPart(text=str(board)),
                         a2a.FilePart(
                             file=a2a.FileContent(
                                 name=filename,
                                 mimeType="image/svg+xml",
                                 uri=image_url,
                             )
-                        ),
+                        )
                     ],
                 ),
-            ),
-        ),
+            ],
+        )
     )
 
     return response
+
 
 def load_or_start_game(task_id: str):
     game = game_repo.load(task_id)
@@ -108,29 +114,32 @@ def load_or_start_game(task_id: str):
         game = game_repo.start_game(engine_path=CHESS_ENGINE_PATH)
     return game
 
+
 def build_error_response(message: str, data: str | None = None):
     return a2a.JSONRPCResponse(
         messageId=uuid4().hex,
         error=a2a.InvalidParamsError(message=message, data=data),
     )
 
+
 def process_user_move(game: Game, user_move: str, task_id: str):
     if user_move == "board":
         return handle_user_move_as_board(game)
     if user_move == "resign":
         return handle_resignation(task_id)
-    
+
     try:
         game.usermove(user_move)
     except ValueError:
         return build_error_response(
             f"Invalid move: '{user_move}'",
-            f"You sent '{user_move}' which is not a valid chess move"
+            f"You sent '{user_move}' which is not a valid chess move",
         )
     except:
         return build_error_response("An error occurred")
-    
-    return None 
+
+    return None
+
 
 async def process_message(task_id: str, user_input: str):
     game = load_or_start_game(task_id)
