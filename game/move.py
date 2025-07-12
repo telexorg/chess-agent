@@ -4,6 +4,7 @@ from repositories.game import Game, GameRepository
 from game.utils import generate_board_image
 from repositories.redis import r as redis_client
 from repositories.env import CHESS_ENGINE_PATH
+from repositories.game import ChessCommandResponse
 
 game_repo = GameRepository(redis_client)
 
@@ -122,30 +123,41 @@ def build_error_response(message: str, data: str | None = None):
     )
 
 
-def process_user_move(game: Game, user_move: str, task_id: str):
-    if user_move == "board":
+def process_user_move(game: Game, command_response: ChessCommandResponse, task_id: str):
+    if command_response.command_type == "board":
         return handle_user_move_as_board(game)
-    if user_move == "resign":
+    
+    if command_response.command_type == "resign":
         return handle_resignation(task_id)
-
-    try:
-        game.usermove(user_move)
-    except ValueError:
+    
+    if command_response.command_type == "invalid":
         return build_error_response(
-            f"Invalid move: '{user_move}'",
-            f"You sent '{user_move}' which is not a valid chess move",
+            "Invalid command",
+            command_response.error_message or "Command not recognized"
         )
-    except:
-        return build_error_response("An error occurred")
-
+    
+    if command_response.command_type == "move":
+        if not command_response.move:
+            return build_error_response("No move provided", "Move command requires a chess move")
+        
+        try:
+            game.usermove(command_response.move)
+        except ValueError:
+            return build_error_response(
+                f"Invalid move: '{command_response.move}'",
+                f"'{command_response.move}' is not a valid chess move"
+            )
+        except Exception:
+            return build_error_response("An error occurred")
+    
     return None
 
 
 async def process_message(task_id: str, user_input: str):
     game = load_or_start_game(task_id)
-    user_move = game_repo.parse_command(user_input)
+    command_response = await game_repo.parse_command(user_input)
 
-    error_response = process_user_move(game, user_move, task_id)
+    error_response = process_user_move(game, command_response, task_id)
     if error_response:
         return error_response
 
