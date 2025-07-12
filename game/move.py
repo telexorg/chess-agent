@@ -37,15 +37,17 @@ def handle_resignation(task_id: str):
             id=task_id,
             status=schemas.TaskStatus(
                 state=schemas.TaskState.completed,
-                message=schemas.Message(
-                    messageId=uuid4().hex,
-                    role="agent",
+            ),
+            artifacts=[
+                schemas.Artifact(
                     parts=[
                         schemas.TextPart(text="Game ended by resignation.\n"),
-                        schemas.TextPart(text="Start a new game by entering a valid move."),
+                        schemas.TextPart(
+                            text="Start a new game by entering a valid move."
+                        ),
                     ],
-                ),
-            ),
+                )
+            ],
         ),
     )
 
@@ -56,11 +58,9 @@ def handle_game_over(task_id: str, aimove, filename: str, image_url: str):
     return schemas.SendMessageResponse(
         result=schemas.Task(
             id=task_id,
-            status=schemas.TaskStatus(
-                state=schemas.TaskState.completed,
-                message=schemas.Message(
-                    role="agent",
-                    messageId=uuid4().hex,
+            status=schemas.TaskStatus(state=schemas.TaskState.completed),
+            artifacts=[
+                schemas.Artifact(
                     parts=[
                         schemas.TextPart(text=f"Game over. AI moved {aimove.uci()}"),
                         schemas.FilePart(
@@ -70,10 +70,12 @@ def handle_game_over(task_id: str, aimove, filename: str, image_url: str):
                                 uri=image_url,
                             )
                         ),
-                        schemas.TextPart(text="Start a new game by entering a valid move"),
+                        schemas.TextPart(
+                            text="Start a new game by entering a valid move"
+                        ),
                     ],
-                ),
-            ),
+                )
+            ],
         ),
     )
 
@@ -88,7 +90,8 @@ def handle_final_response(task_id: str, aimove, filename: str, image_url: str):
             ),
             artifacts=[
                 schemas.Artifact(
-                    name="move", parts=[schemas.TextPart(text=f"AI moved {aimove.uci()}")]
+                    name="move",
+                    parts=[schemas.TextPart(text=f"AI moved {aimove.uci()}")],
                 ),
                 schemas.Artifact(
                     name="board",
@@ -126,30 +129,32 @@ def build_error_response(message: str, data: str | None = None):
 def process_user_move(game: Game, command_response: ChessCommandResponse, task_id: str):
     if command_response.command_type == "board":
         return handle_user_move_as_board(game)
-    
+
     if command_response.command_type == "resign":
         return handle_resignation(task_id)
-    
+
     if command_response.command_type == "invalid":
         return build_error_response(
             "Invalid command",
-            command_response.error_message or "Command not recognized"
+            command_response.error_message or "Command not recognized",
         )
-    
+
     if command_response.command_type == "move":
         if not command_response.move:
-            return build_error_response("No move provided", "Move command requires a chess move")
-        
+            return build_error_response(
+                "No move provided", "Move command requires a chess move"
+            )
+
         try:
             game.usermove(command_response.move)
         except ValueError:
             return build_error_response(
                 f"Invalid move: '{command_response.move}'",
-                f"'{command_response.move}' is not a valid chess move"
+                f"'{command_response.move}' is not a valid chess move",
             )
         except Exception:
             return build_error_response("An error occurred")
-    
+
     return None
 
 
