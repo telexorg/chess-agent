@@ -14,7 +14,7 @@ async def actual_messaging(params: schemas.MessageSendParams, task_id:str, webho
     user_input = params.message.parts[0].text.strip()
     response = await process_message(task_id, user_input)
 
-    res = httpx.post(webhook_url, headers=auth_headers, json=response.model_dump())
+    res = httpx.post(webhook_url, headers=auth_headers, json=response.model_dump(by_alias=True))
     if res.status_code < 300:
         print("Succeeded in webhook response")
     else:
@@ -22,9 +22,9 @@ async def actual_messaging(params: schemas.MessageSendParams, task_id:str, webho
 
 
 async def handle_message_send_with_webhook(params: schemas.MessageSendParams, background_tasks: BackgroundTasks):
-    webhook_url = safe_get(params, "configuration", "pushNotificationConfig", "url")
-    scheme = safe_get(params, "configuration", "pushNotificationConfig", "authentication", "schemes")
-    credential = safe_get(params, "configuration", "pushNotificationConfig", "authentication", "credentials")
+    webhook_url = safe_get(params, "configuration", "push_notification_config", "url")
+    scheme = safe_get(params, "configuration", "push_notification_config", "authentication", "schemes")
+    credential = safe_get(params, "configuration", "push_notification_config", "authentication", "credentials")
 
     auth_headers = {}
 

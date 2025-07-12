@@ -1,85 +1,53 @@
-import os
 import json
 import chess
 import chess.engine
 import schemas
-from typing import Optional, Literal
+from typing import Optional
 from repositories.redis import RedisKeys
 from repositories.env import CHESS_ENGINE_PATH
-from pydantic import ConfigDict, BaseModel, Field
-from pydantic_ai import Agent
-from pydantic_ai.models.gemini import GeminiModel
-from pydantic_ai.providers.google_gla import GoogleGLAProvider
+from repositories.agent import ChessCommandResponse, AgentDependencies, chess_agent
 
-model = GeminiModel(
-    os.getenv("GEMINI_MODEL", "gemini-2.5-flash"),
-    provider=GoogleGLAProvider(api_key=os.getenv("GEMINI_API_KEY")),
-)
-
-class AgentDependencies(BaseModel):
-    """Dependencies for the agent."""
-
-    model_config = ConfigDict(arbitrary_types_allowed=True)
-
-class ChessCommandResponse(BaseModel):
-    """Response from the chess agent parsing user input."""
-    
-    command_type: Literal["resign", "board", "move", "invalid"] = Field(
-        description="Type of command parsed from user input"
-    )
-    
-    move: Optional[str] = Field(
-        default=None,
-        description="Chess move in algebraic notation (only present when command_type is 'move')"
-    )
-    
-    error_message: Optional[str] = Field(
-        default=None,
-        description="Error message for invalid commands"
-    )
-
-
-chess_agent = Agent(
-    model,
-    deps_type=AgentDependencies,
-    retries=2,
-    output_type=ChessCommandResponse,
-    system_prompt=(
-        "You are a Chess Agent."
-        "Your job is to interpret a user's input and respond with one of the following:"
-        "1. 'resign' — if the user wants to quit or give up."
-        "2. 'board' — if the user wants to see the current board state."
-        "3. A valid chess move in standard algebraic notation (e.g., 'e4', 'Nf3')."
-        "For natural language requests such as 'make the most popular first move' or 'play something aggressive', infer the most appropriate move and return it in algebraic notation."
-        "Use known chess opening theory and standard practices to interpret such requests when possible."
-        "If the input does not match any of the above categories or cannot be interpreted into a valid action, respond with 'invalid command' and include a brief error explanation if helpful."
-    )
-)
 
 class Game:
-    def __init__(self, board: chess.Board, engine: chess.engine.SimpleEngine, engine_time_limit=0.5, state=schemas.TaskState.unknown):
+    def __init__(
+        self,
+        board: chess.Board,
+        engine: chess.engine.SimpleEngine,
+        engine_time_limit=0.5,
+        state=schemas.TaskState.unknown,
+        move_history: list[str] = [],
+    ):
         self.board = board
         self.engine = engine
         self.engine_time_limit = engine_time_limit
         self.state = state
+        self.move_history = move_history
 
     def aimove(self):
         ai = self.engine.play(
             self.board, chess.engine.Limit(time=self.engine_time_limit)
         )
         self.board.push(ai.move)
+        self.move_history.append(ai.move.uci())
         self.state = schemas.TaskState.input_required
         return ai.move, self.board
 
-    def usermove(self, move):
+    def usermove(self, move: str):
         try:
-            self.board.push_san(move)
+            m = self.board.parse_san(move)
+            self.board.push(m)
+            self.move_history.append(m.uci())
         except ValueError:
             raise ValueError(f"Invalid move: {move}")
         return self.board
 
     def to_dict(self):
-        return {"fen": self.board.fen(), "engine_time_limit": self.engine_time_limit, "state": self.state.value}
+        return {
+            "fen": self.board.fen(),
+            "engine_time_limit": self.engine_time_limit,
+            "state": self.state.value,
+            "move_history": self.move_history,
+        }
 
     @classmethod
     def from_dict(cls, data):
@@ -93,7 +61,9 @@ class Game:
         except ValueError:
             state = schemas.TaskState.unknown
 
-        return cls(board, engine, engine_time_limit, state)
+        move_history = data.get("move_history", [])
+
+        return cls(board, engine, engine_time_limit, state, move_history)
 
 
 class GameRepository:
@@ -144,7 +114,6 @@ class GameRepository:
 
         return Game(board, engine)
 
-
-    async def parse_command(self, message: str) -> ChessCommandResponse:
-        result = await chess_agent.run(message.strip(), deps=AgentDependencies())
+    async def parse_command(self, message: str, game: Game) -> ChessCommandResponse:
+        result = await chess_agent.run(message.strip(), deps=AgentDependencies(move_history=game.move_history))
         return result.output

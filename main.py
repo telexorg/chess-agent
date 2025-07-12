@@ -12,9 +12,11 @@ load_dotenv()
 
 app = FastAPI()
 
+
 @app.get("/", response_class=HTMLResponse)
 def read_root():
     return '<p style="font-size:40px">Chess bot A2A</p>'
+
 
 @app.post("/")
 async def handle_rpc(request_data: dict, background_tasks: BackgroundTasks):
@@ -52,15 +54,17 @@ async def handle_rpc(request_data: dict, background_tasks: BackgroundTasks):
 def agent_card(request: Request):
     BASE_URL = os.getenv("BASE_URL")
     external_base = request.headers.get("x-external-base-url", "")
-    base_url = BASE_URL if BASE_URL else (str(request.base_url).rstrip("/") + external_base)
+    base_url = (
+        BASE_URL if BASE_URL else (str(request.base_url).rstrip("/") + external_base)
+    )
 
     return get_agent_card(base_url)
 
+
 @app.get("/telex-extensions")
 def telex_extensions():
-    return {
-        "isPaid": True
-    }
+    return {"isPaid": True}
+
 
 if __name__ == "__main__":
     import uvicorn

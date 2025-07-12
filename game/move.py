@@ -9,7 +9,7 @@ from repositories.game import ChessCommandResponse
 game_repo = GameRepository(redis_client)
 
 
-def handle_user_move_as_board(game: Game):
+def get_board_state(game: Game):
     image_url, filename = generate_board_image(game.board)
     board_state_response = schemas.SendMessageResponse(
         result=schemas.Message(
@@ -128,7 +128,7 @@ def build_error_response(message: str, data: str | None = None):
 
 def process_user_move(game: Game, command_response: ChessCommandResponse, task_id: str):
     if command_response.command_type == "board":
-        return handle_user_move_as_board(game)
+        return get_board_state(game)
 
     if command_response.command_type == "resign":
         return handle_resignation(task_id)
@@ -160,14 +160,18 @@ def process_user_move(game: Game, command_response: ChessCommandResponse, task_i
 
 async def process_message(task_id: str, user_input: str):
     game = load_or_start_game(task_id)
-    command_response = await game_repo.parse_command(user_input)
+    command_response = await game_repo.parse_command(user_input, game)
+
+    print(f"Command response is {command_response}")
 
     error_response = process_user_move(game, command_response, task_id)
     if error_response:
         return error_response
 
-    aimove, board = game.aimove()
-    game_repo.save(task_id, game)
+    if command_response.command_type == "move":
+        aimove, board = game.aimove()
+        game_repo.save(task_id, game)
+
     image_url, filename = generate_board_image(board)
 
     if board.is_game_over():
