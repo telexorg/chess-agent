@@ -1,5 +1,5 @@
 import os
-import a2a
+import schemas
 from repositories.random_name import RandomNameRepository
 from repositories.env import WITH_TELEX_EXTENSIONS, DEPLOYMENT_TYPE, DeploymentTypes
 
@@ -11,26 +11,26 @@ agent_name_suffix = (
 
 
 def get_agent_card(base_url):
-    card = a2a.AgentCard(
+    card = schemas.AgentCard(
         name=f"Chess Agent{agent_name_suffix}",
         description="An agent that plays chess. Accepts moves in standard notation and returns updated board state as FEN and an image.",
         url=f"{base_url}",
-        provider=a2a.AgentProvider(
+        provider=schemas.AgentProvider(
             organization="Telex",
             url="https://www.telex.im",
         ),
         version="1.0.0",
         documentationUrl=f"{base_url}/docs",
-        capabilities=a2a.AgentCapabilities(
+        capabilities=schemas.AgentCapabilities(
             streaming=False,
             pushNotifications=DEPLOYMENT_TYPE == DeploymentTypes.WEBHOOK.value,
             stateTransitionHistory=True,
         ),
-        authentication=a2a.AgentAuthentication(schemes=["Bearer"]),
+        authentication=schemas.AgentAuthentication(schemes=["Bearer"]),
         defaultInputModes=["text/plain"],
         defaultOutputModes=["application/x-fen", "image/png"],
         skills=[
-            a2a.AgentSkill(
+            schemas.AgentSkill(
                 id="play_move",
                 name="Play Move",
                 description="Plays a move and returns the updated board in FEN format and as an image.",
@@ -42,7 +42,7 @@ def get_agent_card(base_url):
         ],
     )
 
-    telex_skill = a2a.AgentSkill(
+    telex_skill = schemas.AgentSkill(
         id="telex-extensions",
         name="Telex Extensions",
         description="This agent supports extra features offered by the telex platform.",

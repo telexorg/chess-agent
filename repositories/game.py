@@ -1,13 +1,13 @@
 import json
 import chess
 import chess.engine
-import a2a
+import schemas
 from typing import Optional
 from repositories.redis import RedisKeys
 from repositories.env import CHESS_ENGINE_PATH
 
 class Game:
-    def __init__(self, board: chess.Board, engine: chess.engine.SimpleEngine, engine_time_limit=0.5, state=a2a.TaskState.unknown):
+    def __init__(self, board: chess.Board, engine: chess.engine.SimpleEngine, engine_time_limit=0.5, state=schemas.TaskState.unknown):
         self.board = board
         self.engine = engine
         self.engine_time_limit = engine_time_limit
@@ -18,7 +18,7 @@ class Game:
             self.board, chess.engine.Limit(time=self.engine_time_limit)
         )
         self.board.push(ai.move)
-        self.state = a2a.TaskState.input_required
+        self.state = schemas.TaskState.input_required
         return ai.move, self.board
 
     def usermove(self, move):
@@ -39,9 +39,9 @@ class Game:
         state_str = data.get("state", "unknown")
 
         try:
-            state = a2a.TaskState(state_str)
+            state = schemas.TaskState(state_str)
         except ValueError:
-            state = a2a.TaskState.unknown
+            state = schemas.TaskState.unknown
 
         return cls(board, engine, engine_time_limit, state)
 
@@ -54,18 +54,18 @@ class GameRepository:
     def _game_key(self, task_id: str) -> str:
         return f"{self.prefix}:{task_id}"
 
-    def task_state(self, task_id: str) -> a2a.TaskState:
+    def task_state(self, task_id: str) -> schemas.TaskState:
         key = self._game_key(task_id)
         data = self.r.get(key)
         if data:
             data_json = json.loads(data)
             state_str = data_json.get("state", "unknown")
             try:
-                return a2a.TaskState(state_str)
+                return schemas.TaskState(state_str)
             except ValueError:
-                return a2a.TaskState.unknown
+                return schemas.TaskState.unknown
 
-        return a2a.TaskState.unknown
+        return schemas.TaskState.unknown
 
     def save(self, task_id: str, game: Game):
         key = self._game_key(task_id)
@@ -81,7 +81,7 @@ class GameRepository:
     def game_over(self, task_id: str):
         game = self.load(task_id)
         if game:
-            game.state = a2a.TaskState.completed
+            game.state = schemas.TaskState.completed
             self.save(task_id, game)
 
     def delete(self, task_id: str):

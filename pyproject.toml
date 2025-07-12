@@ -12,6 +12,7 @@ dependencies = [
     "httpx>=0.28.1",
     "jsonrpcclient>=4.0.3",
     "minio>=7.2.15",
+    "pydantic-ai>=0.4.2",
     "python-dotenv>=1.1.0",
     "redis[hiredis]>=6.0.0",
 ]

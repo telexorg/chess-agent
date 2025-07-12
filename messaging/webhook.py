@@ -1,4 +1,4 @@
-import a2a
+import schemas
 from typing import Any
 from fastapi import BackgroundTasks
 from uuid import uuid4
@@ -10,7 +10,7 @@ from helpers.utils import safe_get
 
 game_repo = GameRepository(redis_client)
 
-async def actual_messaging(params: a2a.MessageSendParams, task_id:str, webhook_url: str, auth_headers: dict[str, Any]):
+async def actual_messaging(params: schemas.MessageSendParams, task_id:str, webhook_url: str, auth_headers: dict[str, Any]):
     user_input = params.message.parts[0].text.strip()
     response = await process_message(task_id, user_input)
 
@@ -21,7 +21,7 @@ async def actual_messaging(params: a2a.MessageSendParams, task_id:str, webhook_u
         print(f"Failed to send webhook response: status - {res.status_code} body - {res.text}")
 
 
-async def handle_message_send_with_webhook(params: a2a.MessageSendParams, background_tasks: BackgroundTasks):
+async def handle_message_send_with_webhook(params: schemas.MessageSendParams, background_tasks: BackgroundTasks):
     webhook_url = safe_get(params, "configuration", "pushNotificationConfig", "url")
     scheme = safe_get(params, "configuration", "pushNotificationConfig", "authentication", "schemes")
     credential = safe_get(params, "configuration", "pushNotificationConfig", "authentication", "credentials")
@@ -32,9 +32,9 @@ async def handle_message_send_with_webhook(params: a2a.MessageSendParams, backgr
         auth_headers["X-TELEX-API-KEY"] = credential
 
     if not webhook_url:
-        return a2a.JSONRPCResponse(
+        return schemas.JSONRPCResponse(
             messageId=uuid4().hex,
-            error=a2a.InvalidParamsError(
+            error=schemas.InvalidParamsError(
                 message="No webhook URL provided, but is necessary",
             ),
         )
@@ -45,11 +45,11 @@ async def handle_message_send_with_webhook(params: a2a.MessageSendParams, backgr
     background_tasks.add_task(actual_messaging, params, task_id, webhook_url, auth_headers)
 
 
-    return a2a.SendMessageResponse(
-        result=a2a.Task(
+    return schemas.SendMessageResponse(
+        result=schemas.Task(
             id=task_id,
-            status=a2a.TaskStatus(
-                state=a2a.TaskState.working
+            status=schemas.TaskStatus(
+                state=schemas.TaskState.working
             )
         ),
     )
