@@ -7,9 +7,9 @@ from game.move import process_message
 game_repo = GameRepository(redis_client)
 
 async def handle_message_send(params: schemas.MessageSendParams):
-    task_id = uuid4().hex if not params.message.taskId else params.message.taskId
+    task_id = uuid4().hex if not params.message.task_id else params.message.task_id
     user_input = params.message.parts[0].text.strip()
-    
+
     return await process_message(task_id, user_input)
 
 async def handle_get_task(params: schemas.TaskQueryParams):

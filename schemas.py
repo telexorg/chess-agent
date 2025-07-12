@@ -343,6 +343,8 @@ class MessageQueryParams(TaskIdParams):
 class MessageSendParams(BaseModel):
     """Parameters for sending a message."""
 
+    model_config = ConfigDict(populate_by_name=True)
+
     message: Message
     configuration: MessageSendConfiguration | None = None
     metadata: dict[str, Any] | None = None

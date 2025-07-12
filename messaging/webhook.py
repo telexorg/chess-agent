@@ -39,7 +39,7 @@ async def handle_message_send_with_webhook(params: schemas.MessageSendParams, ba
             ),
         )
     
-    existing_task_id = params.message.taskId
+    existing_task_id = params.message.task_id
     task_id = existing_task_id if existing_task_id else uuid4().hex
 
     background_tasks.add_task(actual_messaging, params, task_id, webhook_url, auth_headers)
