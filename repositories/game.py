@@ -115,5 +115,5 @@ class GameRepository:
         return Game(board, engine)
 
     async def parse_command(self, message: str, game: Game) -> ChessCommandResponse:
-        result = await chess_agent.run(message.strip(), deps=AgentDependencies(move_history=game.move_history))
+        result = await chess_agent.run(message.strip(), deps=AgentDependencies(move_history=game.move_history, fen=game.board.fen()))
         return result.output
