@@ -1,6 +1,8 @@
 # Chess Agent A2A
 
-This is a sample A2A agent that plays Chess! Given a chess move (in chess notation like e4) in A2A format
+This is a sample A2A agent that plays Chess! Given a chess move (in chess notation like e4) in A2A format. Watch a demo here.
+
+[![CHESS A2A DEMO](https://img.youtube.com/vi/Y-8_7jBtt_4/0.jpg)](https://www.youtube.com/watch?v=Y-8_7jBtt_4)
 
 ## Example
 
