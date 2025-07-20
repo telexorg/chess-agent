@@ -82,7 +82,7 @@ def get_move_history_text(moves: list[str]):
 
     return move_history_text
 
-# @chess_agent.system_prompt
+@chess_agent.system_prompt
 def get_system_prompt_old(ctx: RunContext[AgentDependencies]) -> str:
     """Generate a context-aware system prompt based on current game state."""
     
@@ -112,7 +112,7 @@ def get_system_prompt_old(ctx: RunContext[AgentDependencies]) -> str:
     """
 
 
-@chess_agent.system_prompt
+# @chess_agent.system_prompt
 def get_system_prompt(ctx: RunContext[AgentDependencies]) -> str:
     """Generate a context-aware system prompt based on current game state."""
     
