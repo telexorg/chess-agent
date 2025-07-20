@@ -50,6 +50,38 @@ chess_agent = Agent(
 )
 
 
+def game_context(moves: list[str]):
+    game_phase = ""
+    context_hint = ""
+
+    move_count = len(moves)
+    if move_count == 0:
+        game_phase = "opening"
+        context_hint = "The game is just starting."
+    elif move_count < 20:
+        game_phase = "early game"
+        context_hint = f"We're in the early game with {move_count} moves played."
+    elif move_count < 40:
+        game_phase = "middle game"
+        context_hint = f"We're in the middle game with {move_count} moves played."
+    else:
+        game_phase = "endgame"
+        context_hint = f"We're in the endgame with {move_count} moves played."
+
+    return (game_phase, context_hint)
+    
+
+def get_move_history_text(moves: list[str]):
+    if moves:
+        recent_moves = moves[-6:]  # Show last 6 moves for context
+        move_history_text = f"Recent moves: {', '.join(recent_moves)}"
+        if len(moves) > 6:
+            move_history_text = f"Last moves: {', '.join(recent_moves)} (showing last 6 of {len(moves)} total)"
+    else:
+        move_history_text = "No moves have been made yet."
+
+    return move_history_text
+
 # @chess_agent.system_prompt
 def get_system_prompt_old(ctx: RunContext[AgentDependencies]) -> str:
     """Generate a context-aware system prompt based on current game state."""
@@ -88,28 +120,10 @@ def get_system_prompt(ctx: RunContext[AgentDependencies]) -> str:
     moves = ctx.deps.move_history
     
     # Determine game phase and context
-    move_count = len(moves)
-    if move_count == 0:
-        game_phase = "opening"
-        context_hint = "The game is just starting."
-    elif move_count < 20:
-        game_phase = "early game"
-        context_hint = f"We're in the early game with {move_count} moves played."
-    elif move_count < 40:
-        game_phase = "middle game"
-        context_hint = f"We're in the middle game with {move_count} moves played."
-    else:
-        game_phase = "endgame"
-        context_hint = f"We're in the endgame with {move_count} moves played."
-    
+    game_phase, context_hint = game_context(moves)
+
     # Format move history for context
-    if moves:
-        recent_moves = moves[-6:]  # Show last 6 moves for context
-        move_history_text = f"Recent moves: {', '.join(recent_moves)}"
-        if len(moves) > 6:
-            move_history_text = f"Last moves: {', '.join(recent_moves)} (showing last 6 of {len(moves)} total)"
-    else:
-        move_history_text = "No moves have been made yet."
+    move_history_text = get_move_history_text(moves)
     
     return f"""
 You are a Chess Agent that interprets user input for a chess game and provides appropriate responses.
