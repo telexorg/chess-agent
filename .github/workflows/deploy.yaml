@@ -22,3 +22,4 @@ jobs:
             git pull origin main
             uv sync
             supervisorctl restart chess_agent
+            supervisorctl restart chessagent_with_telex_skill
